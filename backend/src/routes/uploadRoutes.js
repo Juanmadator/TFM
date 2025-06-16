@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const cloudinary = require('cloudinary').v2; // Make sure v2 is used
-const { verificarToken } = require('../middlewares/authMiddleware.js'); // Your auth middleware
+// const { verificarToken } = require('../middlewares/authMiddleware.js'); // <--- ELIMINAR ESTA LÍNEA
 const User = require('../models/User'); // IMPORTANT: Adjust path to your User Mongoose model
 
 // Helper function to delete temporary files created by express-fileupload
@@ -15,20 +15,29 @@ const deleteTempFile = (filePath) => {
     }
 };
 
-// Route to Upload User Profile Image
-router.post('/profile-image', verificarToken, async (req, res, next) => {
+// Route to Upload User Profile Image (userId ahora como parámetro de URL)
+// Endpoint: POST /api/uploads/profile-image/:userId
+router.post('/profile-image/:userId', async (req, res, next) => { // <--- CAMBIO AQUÍ: :userId en la URL
     try {
+        const userId = req.params.userId; // <--- OBTENER userId DESDE req.params
+
         if (!req.files || !req.files.image) {
             return res.status(400).json({ message: 'No se ha subido ningún archivo de imagen. Por favor, sube un archivo llamado "image".' });
         }
 
-        const userId = req.usuario.id; // Get user ID from the token (assuming it's set by verificarToken)
         const file = req.files.image;
 
         const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedImageTypes.includes(file.mimetype)) {
             deleteTempFile(file.tempFilePath);
             return res.status(400).json({ message: 'Tipo de archivo inválido. Solo se permiten imágenes JPEG, PNG, GIF, WEBP.' });
+        }
+
+        // --- Búsqueda del usuario para asegurar que el ID es válido ---
+        const userExists = await User.findById(userId);
+        if (!userExists) {
+            deleteTempFile(file.tempFilePath);
+            return res.status(404).json({ message: 'Usuario no encontrado para subir la imagen de perfil.' });
         }
 
         const result = await cloudinary.uploader.upload(file.tempFilePath, {
@@ -38,6 +47,7 @@ router.post('/profile-image', verificarToken, async (req, res, next) => {
                 { width: 200, height: 200, crop: "fill", gravity: "face" },
                 { radius: "max" }
             ],
+            type: 'upload'
         });
 
         await User.findByIdAndUpdate(userId, { url_perfil_img: result.secure_url });
@@ -55,57 +65,54 @@ router.post('/profile-image', verificarToken, async (req, res, next) => {
         if (req.files && req.files.image && req.files.image.tempFilePath) {
             deleteTempFile(req.files.image.tempFilePath);
         }
-        next(error); // Pass error to your error handling middleware
+        next(error);
     }
 });
 
-// Route to Upload User Resume (PDF)
-router.post('/resume', verificarToken, async (req, res, next) => {
+// Route to Upload User Resume (PDF) (userId ahora como parámetro de URL)
+// Endpoint: POST /api/uploads/resume/:userId
+router.post('/resume/:userId', async (req, res, next) => { // <--- CAMBIO AQUÍ: :userId en la URL
     try {
+        const userId = req.params.userId; // <--- OBTENER userId DESDE req.params
+
         if (!req.files || !req.files.pdf) {
-            // Updated message to reflect it's for image transformation from PDF
             return res.status(400).json({ message: 'No se ha subido ningún archivo PDF. Por favor, sube un archivo llamado "pdf" para generar la imagen del currículum.' });
         }
 
-        const userId = req.usuario.id; // Using req.usuario.id as per your confirmation
         const file = req.files.pdf;
 
-        // Keep PDF mimetype validation, as the source file is still a PDF
         if (file.mimetype !== 'application/pdf') {
             deleteTempFile(file.tempFilePath);
             return res.status(400).json({ message: 'Tipo de archivo inválido. Solo se permiten archivos PDF para el currículum (para ser transformado en imagen).' });
         }
 
-        const user = await User.findOne({_id:userId});
-        console.log(user)
+        // --- Búsqueda del usuario para asegurar que el ID es válido ---
+        const user = await User.findById(userId); // Cambiado de findOne a findById para consistencia
         if (!user) {
             deleteTempFile(file.tempFilePath);
-            return res.status(404).json({ message: 'Usuario no encontrado.' });
+            return res.status(404).json({ message: 'Usuario no encontrado para subir el currículum.' });
         }
 
-        // --- MODIFICACIÓN CLAVE AQUÍ: Transformar PDF a Imagen ---
         const result = await cloudinary.uploader.upload(file.tempFilePath, {
             folder: `user_resumes/${userId}`,
-            resource_type: 'image', // <--- CAMBIO: Súbelo como un recurso de imagen
-            format: 'jpg',          // <--- AÑADIDO: Formato de la imagen de salida (e.g., jpg, png)
-            pages: '1',             // <--- AÑADIDO: Solo la primera página del PDF
-            public_id: `cv_preview_${userId}_${Date.now()}`, // <--- MODIFICADO: Nuevo public_id, sin .pdf aquí, porque el formato lo da 'format'
-            // Opcional: Añadir transformaciones para el preview de la imagen
+            resource_type: 'image',
+            format: 'jpg',
+            pages: '1',
+            public_id: `cv_preview_${userId}_${Date.now()}`,
             transformation: [
-                { width: 800, crop: "limit" }, // Limita el ancho a 800px, ajusta la altura proporcionalmente
-                { quality: "auto" }           // Calidad automática
+                { width: 800, crop: "limit" },
+                { quality: "auto" }
             ],
-            type: 'upload' // Asegúrate de que sea público si lo necesitas
+            type: 'upload'
         });
 
-        // La URL devuelta ahora será la de la imagen (e.g., .jpg)
         await User.findByIdAndUpdate(userId, { url_curriculum: result.secure_url });
 
         deleteTempFile(file.tempFilePath);
 
         res.status(200).json({
             message: 'Currículum subido y transformado a imagen con éxito.',
-            url: result.secure_url, // Esta URL será ahora una URL de imagen
+            url: result.secure_url,
             public_id: result.public_id
         });
 
@@ -114,12 +121,12 @@ router.post('/resume', verificarToken, async (req, res, next) => {
         if (req.files && req.files.pdf && req.files.pdf.tempFilePath) {
             deleteTempFile(req.files.pdf.tempFilePath);
         }
-        next(error); // Pass error to your error handling middleware
+        next(error);
     }
 });
-// Route to get a user's resume (assuming you want to serve it from your backend)
+
+// Route to get a user's resume (This one already takes userId as a param)
 // Endpoint: GET /api/uploads/resume/:userId
-// Note: This directly sends the Cloudinary URL. Browsers will typically download PDFs.
 router.get('/resume/:userId', async (req, res, next) => {
     try {
         const userId = req.params.userId;
@@ -132,7 +139,6 @@ router.get('/resume/:userId', async (req, res, next) => {
             return res.status(404).json({ message: 'Currículum no encontrado para este usuario.' });
         }
 
-        // Redirect to the Cloudinary URL to initiate download/view
         res.redirect(user.url_curriculum);
 
     } catch (error) {
@@ -140,6 +146,5 @@ router.get('/resume/:userId', async (req, res, next) => {
         next(error);
     }
 });
-
 
 module.exports = router;

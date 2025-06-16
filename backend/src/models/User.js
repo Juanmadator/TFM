@@ -32,6 +32,10 @@ const usuarioSchema = new mongoose.Schema({
     enum: ['Empleado', 'Desempleado'],
     default : 'Desempleado'
   },
+  nacimiento: {
+    type: Date,
+    required: true,
+  },
   url_curriculum: {
      type: String,
     required: false,

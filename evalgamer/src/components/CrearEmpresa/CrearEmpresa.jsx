@@ -1,41 +1,33 @@
-// src/features/company/CreateCompany.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from '../../css/Register.module.css';
-import { companyService } from '../../services/api'; // Ensure companyService is imported
-// import { imageUploadService } from '../../services/imageUploadService'; 
-import useAlerts from '../../hooks/useAlert'; // Assuming you have this hook
+import { companyService } from '../../services/api';
+import useAlerts from '../../hooks/useAlert';
 
 export const CreateCompany = () => {
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  // Changed: url_logo will be set after image upload, not directly from input
-  const [selectedLogoFile, setSelectedLogoFile] = useState(null); // State to hold the selected file object
+  const [selectedLogoFile, setSelectedLogoFile] = useState(null);
   const [email_contacto, setEmailContacto] = useState('');
   const [direccion, setDireccion] = useState('');
-  const [userId, setUserId] = useState(null); // To store the user_id from localStorage
+  const [userId, setUserId] = useState(null);
 
   const [loading, setLoading] = useState(false);
-  const [imageUploading, setImageUploading] = useState(false); // New state to indicate image upload is in progress
+  const [imageUploading, setImageUploading] = useState(false);
 
   const navigate = useNavigate();
   const { showToast, showLoadingAlert, closeAlert } = useAlerts();
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
-    // Assuming user object has an _id field (common for MongoDB IDs)
     if (user && user.id) {
       setUserId(user.id);
     } else {
-      // Handle case where user is not logged in or user_id is not available
       showToast('error', 'Error', 'No se pudo obtener el ID de usuario. Inicia sesión.');
-      // Optionally redirect to login if userId is mandatory for this form
-      // navigate('/login');
     }
-  }, [showToast]); // navigate removed from dependency array as it's not directly used for state update
+  }, [showToast]);
 
   const handleFileChange = (e) => {
-    // Set the selected file when the input changes
     setSelectedLogoFile(e.target.files[0]);
   };
 
@@ -50,40 +42,34 @@ export const CreateCompany = () => {
     setLoading(true);
     showLoadingAlert('Creando empresa...', 'Por favor espera.');
 
-    let logoUrl = ''; // This variable will hold the Cloudinary URL after upload
+    let logoUrl = '';
 
     try {
-      // 1. Upload the image if a file has been selected
       if (selectedLogoFile) {
         setImageUploading(true);
-        // Show a temporary alert for image upload
         showLoadingAlert('Subiendo logo...', 'Esto puede tardar un momento.');
-        
         logoUrl = await imageUploadService.uploadImage(selectedLogoFile);
-        
         setImageUploading(false);
-        closeAlert(); // Close the image upload specific alert
-        showLoadingAlert('Creando empresa...', 'Casi terminamos.'); // Re-show the main alert
+        closeAlert();
+        showLoadingAlert('Creando empresa...', 'Casi terminamos.');
       }
 
-      // 2. Prepare the company data, including the obtained logo URL
       const companyData = {
         nombre,
         descripcion,
-        url_logo: logoUrl, // Use the URL obtained from imageUploadService
+        url_logo: logoUrl,
         email_contacto,
         direccion,
         user_id: userId,
       };
 
-      // 3. Send the company data to your backend
       const response = await companyService.createCompany(companyData);
 
-      closeAlert(); // Close the final alert
+      closeAlert();
       showToast('success', '¡Empresa Creada!', response.data.message || 'La empresa ha sido registrada con éxito.');
 
       setTimeout(() => {
-        navigate('/empresas'); // Redirect to a company list or dashboard page
+        navigate('/empresas');
       }, 1500);
 
     } catch (error) {
@@ -91,24 +77,23 @@ export const CreateCompany = () => {
       let errorMessage = 'Hubo un problema al registrar la empresa. Inténtalo de nuevo.';
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
-      } else if (error.message.includes('Error al subir la imagen')) { // Check for specific error message from image service
-        errorMessage = error.message; // Use the message from the imageUploadService
+      } else if (error.message.includes('Error al subir la imagen')) {
+        errorMessage = error.message;
       }
       showToast('error', 'Error', errorMessage);
       console.error('Error al crear empresa en el componente:', error.response?.data || error.message || error);
     } finally {
       setLoading(false);
-      setImageUploading(false); // Ensure imageUploading is reset
+      setImageUploading(false);
     }
   };
 
   return (
-    <div className={styles.registerContainer}>
-      <div className={styles.registerCard}>
-        <h2 className={styles.registerTitle}>Registrar Empresa</h2>
-        <form onSubmit={handleSubmit} className={styles.registerForm}>
+    <div className={styles.registerContainer} style={{ color: 'white' }}>
+      <div className={styles.registerCard} style={{ color: 'white' }}>
+        <h2 className={styles.registerTitle} style={{ color: 'white' }}>Registrar Empresa</h2>
+        <form onSubmit={handleSubmit} className={styles.registerForm} style={{ color: 'white' }}>
           <div className={styles.formColumns}>
-            {/* Columna Izquierda */}
             <div className={styles.column}>
               <div className={styles.inputGroup}>
                 <input
@@ -119,7 +104,8 @@ export const CreateCompany = () => {
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   required
-                  disabled={loading || imageUploading} // Disable inputs during any loading phase
+                  disabled={loading || imageUploading}
+                  style={{ color: 'white' }}
                 />
               </div>
 
@@ -133,30 +119,30 @@ export const CreateCompany = () => {
                   onChange={(e) => setEmailContacto(e.target.value)}
                   required
                   disabled={loading || imageUploading}
+                  style={{ color: 'white' }}
                 />
               </div>
 
-              {/* Input for Logo Upload */}
               <div className={styles.inputGroup}>
-                {/* Custom styled label for file input */}
                 <label 
                   htmlFor="company-logo-upload" 
                   className={`${styles.fileInputLabel} ${selectedLogoFile ? styles.hasFile : ''}`}
+                  style={{ color: 'white' }}
                 >
                   {selectedLogoFile ? selectedLogoFile.name : 'Subir Logo (PNG, JPG)'}
                 </label>
                 <input
                   id="company-logo-upload"
-                  type="file" // Change type to 'file'
-                  className={styles.hiddenFileInput} // Hide the default file input
+                  type="file"
+                  className={styles.hiddenFileInput}
                   onChange={handleFileChange}
                   disabled={loading || imageUploading}
-                  accept="image/png, image/jpeg, image/jpg" // Restrict file types
+                  accept="image/png, image/jpeg, image/jpg"
+                  style={{ color: 'white' }}
                 />
               </div>
             </div>
 
-            {/* Columna Derecha */}
             <div className={styles.column}>
               <div className={styles.inputGroup}>
                 <textarea
@@ -167,7 +153,8 @@ export const CreateCompany = () => {
                   onChange={(e) => setDescripcion(e.target.value)}
                   required
                   disabled={loading || imageUploading}
-                  rows="4" // Make textarea larger
+                  rows="4"
+                  style={{ color: 'white' }}
                 ></textarea>
               </div>
 
@@ -181,21 +168,23 @@ export const CreateCompany = () => {
                   onChange={(e) => setDireccion(e.target.value)}
                   required
                   disabled={loading || imageUploading}
+                  style={{ color: 'white' }}
                 />
               </div>
             </div>
-          </div> {/* End of formColumns */}
+          </div>
 
           <button
             type="submit"
             className={styles.registerButton}
-            disabled={loading || imageUploading} // Disable button during any loading phase
+            disabled={loading || imageUploading}
+            style={{ color: 'white' }}
           >
             {loading ? 'Registrando Empresa...' : (imageUploading ? 'Subiendo logo...' : 'Registrar Empresa')}
           </button>
         </form>
-        <div className={styles.loginPrompt}> {/* Reusing this class for general links/prompts */}
-          <a href="/empresas" className={styles.loginLink}>Volver a la lista de empresas</a>
+        <div className={styles.loginPrompt} style={{ color: 'white' }}>
+          <a href="/empresas" className={styles.loginLink} style={{ color: 'white' }}>Volver a la lista de empresas</a>
         </div>
       </div>
     </div>

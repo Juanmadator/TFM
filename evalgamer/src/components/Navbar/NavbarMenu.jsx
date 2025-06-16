@@ -45,6 +45,10 @@ function NavbarMenu() {
                <Nav.Link as={NavLink} to="/empresas">
               {t("Companies")}
             </Nav.Link>
+
+                <Nav.Link as={NavLink} to="/ofertas">
+              {t("Ofertas")}
+            </Nav.Link>
           </Nav>
           <Nav>
             <Button variant="outline-light" onClick={handleLogout} className={`${styles.logout} ms-2`}>

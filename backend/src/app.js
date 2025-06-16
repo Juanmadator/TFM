@@ -40,12 +40,12 @@ app.use(fileUpload({
   createParentPath: true
 }));
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: 'Demasiadas peticiones desde esta IP, intenta más tarde.',
-});
-app.use(limiter);
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 100,
+//   message: 'Demasiadas peticiones desde esta IP, intenta más tarde.',
+// });
+// app.use(limiter);
 
 // Note: If all image serving will be from Cloudinary, you might not need this line:
 // app.use("/uploads", express.static(path.join(__dirname, "../uploads")));

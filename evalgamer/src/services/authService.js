@@ -22,6 +22,7 @@ export const loginUser = async (email, password) => {
     // 1. Guardar la información del usuario siempre, sea admin o no.
     // La API devuelve el objeto 'usuario' dentro de 'data'.
     if (data.usuario) {
+      console.log(data)
       localStorage.setItem('user', JSON.stringify(data.usuario));
       console.log('Información del usuario guardada:', data.usuario);
     } else {
@@ -64,8 +65,6 @@ export const registerUser = async (nombre, email, password, rol, username) => {
       throw new Error(data.message || 'Error al registrar usuario');
     }
 
-    // Si el registro es exitoso, la API podría devolver un token o datos del usuario.
-    // Aunque para registro, a menudo se redirige al login sin loguear automáticamente.
     if (data.token) { // Esto es opcional, depende de si tu backend loguea al registrar
       localStorage.setItem('userToken', data.token);
     }

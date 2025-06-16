@@ -13,23 +13,23 @@ const OfertaTrabajoSchema = new mongoose.Schema({
     },
     requisitos: [{
         type: String,
-        trim: true
+        trim: false
     }],
     salario: {
         minimo: { type: Number, required: false },
         maximo: { type: Number, required: false },
         moneda: { type: String, default: 'EUR', trim: true },
-        tipo: { type: String, enum: ['anual', 'mensual', 'por_hora'], required: false }
+        tipo: { type: String, enum: ['anual', 'mensual', 'por_hora'], required: true }
     },
     ubicacion: {
         type: String,
         required: [true, 'La ubicación es obligatoria'],
-        trim: true
+        trim: false
     },
     tipo_empleo: {
         type: String,
         enum: ['Jornada Completa', 'Media Jornada', 'Contrato', 'Temporal', 'Prácticas'],
-        required: [true, 'El tipo de empleo es obligatorio']
+        required: [false, 'El tipo de empleo es obligatorio']
     },
     id_empresa: {
         type: mongoose.Schema.Types.ObjectId,
@@ -49,6 +49,10 @@ const OfertaTrabajoSchema = new mongoose.Schema({
         type: String,
         enum: ['activa', 'cerrada', 'borrador'],
         default: 'activa'
+    },
+    horas_por_dia: {
+        type: Number,
+        required: true
     }
 }, {
     timestamps: true
